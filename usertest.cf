@@ -1,0 +1,32 @@
+bundle agent usertest
+{
+  vars:
+  "user" string => "exampleuser";
+  users:
+    host01::
+      "$(user)"
+      policy => "present",
+      home_dir => "/home/$(user)",
+      group_primary => "$(user)",
+      shell => "/bin/bash/",
+      home_bundle => setup_home_dir("$(user)");
+}
+
+bundle agent setup_home_dir(user)
+{
+  vars:
+    "user" string => "exampleuser";
+    "uid[$(user)]" int =>  getuid( $(user) );
+  files:
+    host01::
+      "/home/$(user)/."
+        create => "true";
+        perms => mo( 766, "$(uid[$(user)])");
+      "/home/$(user)/.ssh/."
+        create => "true",
+        perms => mo( 700, "$(uid[$(user)])");
+      "/home/$(user)/.ssh/authorized_keys"
+        perms => mo( 600, "$(uid[$(user)])"),
+        comment => "Copy authorized keys",
+        copy_from => secure_cp("/var/cfengine/masterfiles/teszt/authorized_keys","$(sys.policy_hub)");
+}
